@@ -93,6 +93,8 @@ class Summoner:
                 time.sleep(sleep_time)
                 return self.handle_request(ext, **queries)
             print(f"HTTP Error: {http_except}")
+            raise requests.exceptions.HTTPError
+
         except ConnectionError as con_except:
             print(f"Connection Error: {con_except}")
         except requests.exceptions.RequestException as err:
@@ -188,7 +190,7 @@ profileicon/{summoner['profileIconId']}.png"
         header = "{\"matches\":["
         closer = "]}"
         breaker = ","
-        temp_file_name = "temp_data_file_4.json"
+        temp_file_name = "temp_data_file.json"
         with open(temp_file_name, 'w+', encoding="utf-8") as write_file:
             print("Updating stats...")
             write_file.write(header)
