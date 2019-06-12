@@ -1,4 +1,5 @@
 # Final-Project
+[![Build Status](https://travis-ci.com/reilly-cuauhtemoc-8178/Final-Project.svg?branch=master)](https://travis-ci.com/reilly-cuauhtemoc-8178/Final-Project)
 
 Cuauhtemoc Reilly
 
