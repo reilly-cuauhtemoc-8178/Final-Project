@@ -203,7 +203,7 @@ profileicon/{summoner['profileIconId']}.png"
             write_file.write(closer)
             print("Stats updated.")
 
-        with open(temp_file_name, 'r', encodinng='utf-8') as check:
+        with open(temp_file_name, 'r', encoding='utf-8') as check:
             test = json.load(check)
             for match in test["matches"]:
                 if match is None:
@@ -483,16 +483,16 @@ profileicon/{summoner['profileIconId']}.png"
         print(c_3)
 
         print("Least frequently played as:")
-        d_4 = [(id_dict[str(x[0])], f"{x[1]} games") for x in self.low_wins_as]
+        d_4 = [(id_dict[str(x[0])], f"{x[4]} games") for x in self.low_wins_as]
         print(d_4)
 
         print("Least frequently played with:")
-        e_5 = [(id_dict[str(x[0])], f"{x[2]} games")
+        e_5 = [(id_dict[str(x[0])], f"{x[5]} games")
                for x in self.low_wins_with]
         print(e_5)
 
         print("Least frequently played against:")
-        f_6 = [(id_dict[str(x[0])], f"{x[3]} games")
+        f_6 = [(id_dict[str(x[0])], f"{x[6]} games")
                for x in self.low_wins_against]
         print(f_6)
 
