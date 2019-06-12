@@ -1,7 +1,7 @@
 ---
 dist: xenial
 install:
-  - "pip install pytest pylint pycodestyle pydocstyle requests argparse re time json"
+  - "pip install pytest pylint pycodestyle pydocstyle requests"
 language: python
 python:
   - "3.7"
@@ -9,6 +9,7 @@ script:
   - pylint summoner_container.py
   - pycodestyle summoner_container.py
   - pydocstyle summoner_container.py
+  - pytest
 notifications:
   email:
     recipients:
