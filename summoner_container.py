@@ -1,4 +1,9 @@
 #! /usr/bin/env python3
+"""
+Container for module containing data for one summoner.
+
+Class contains methods to operate on data.
+"""
 import argparse
 import json
 import time
@@ -7,13 +12,12 @@ import requests
 
 
 class Summoner:
-    """
-    Contains data for one summoner and methods to calculate data.
-    """
+    """Contains data for one summoner and methods to calculate data."""
+
     bad_connect = False
     API_TEST_KEY = "RGAPI-1c325435-38f9-4272-970d-2958e47d3818"
-    SUMMONER = ""
-    STATIC_DATA = ()
+    summoner_in = ""
+    static_data = ()
 
     high_wins_with = []
     high_wins_as = []
@@ -24,20 +28,19 @@ class Summoner:
     highest_mastery = []
 
     def __init__(self):
+        """Initialize Summoner object."""
         con = self.check_connection()
         if con is True:
-            self.SUMMONER = self.get_user_input()
-            self.STATIC_DATA = self.get_static_data()
+            self.summoner_in = self.get_user_input()
+            self.static_data = self.get_static_data()
         else:
             self.bad_connect = True
             return
 
     def process(self):
-        """
-        Call functions used for getting information.
-        """
+        """Call functions used for getting information."""
         api_key = self.API_TEST_KEY
-        name = self.SUMMONER
+        name = self.summoner_in
         summoner_by_name = self.get_summoner_by_name(name, api_key)
         matchlist_by_summ = self.get_matchlist_by_summoner(name, api_key)
         tmp_file_name = self.compile_match_list(matchlist_by_summ, api_key)
@@ -46,22 +49,25 @@ class Summoner:
         stat_dict = self.create_stat_dict_2(matchlist_data)
         data_array = self.flatten_stat_dict(stat_dict)
         comp_list = ["wins-as", "wins-with", "wins-against",
-                    "losses-as", "losses-with", "losses-against"]
-        comp_results = [self.comp_champ_stats(data_array, d) for d in comp_list]
+                     "losses-as", "losses-with", "losses-against"]
+        comp_results = [self.comp_champ_stats(data_array, d)
+                        for d in comp_list]
         self.high_wins_as = comp_results[0]
         self.high_wins_with = comp_results[1]
         self.high_wins_against = comp_results[2]
         self.low_wins_as = comp_results[3]
         self.low_wins_with = comp_results[4]
         self.low_wins_against = comp_results[5]
-        self.highest_mastery = self.comp_champ_stats(data_array, 'wins-against', mastery)
+        self.highest_mastery = self.comp_champ_stats(data_array,
+                                                     'wins-against',
+                                                     mastery)
         self.parse_results()
         return "all clear"
-
 
     def handle_request(self, ext, **queries):
         """
         Handle API request.
+
         Return result if successful. Handle status code otherwise.
 
         Parameters:
@@ -86,19 +92,15 @@ class Summoner:
                 print(f"Rate limit reached. Resting for {sleep_time} seconds.")
                 time.sleep(sleep_time)
                 return self.handle_request(ext, **queries)
-            #else:
-            #    print(f"HTTP Error: {http_except}")
-            #    return None
+            print(f"HTTP Error: {http_except}")
         except ConnectionError as con_except:
             print(f"Connection Error: {con_except}")
-            return None
         except requests.exceptions.RequestException as err:
             print(f"Error: {err}")
-            return None
 
     def check_connection(self):
         """
-        Checks connection before proceeding.
+        Check connection before proceeding.
 
         Returns : bool
 
@@ -113,46 +115,47 @@ class Summoner:
             connect = True
         return connect
 
-    def get_user_input(self):
+    @staticmethod
+    def get_user_input():
         """
         Prompt user to input name and check for validity.
 
         Returns : str
+
         """
         parser = argparse.ArgumentParser()
         parser.add_argument("summoner", type=str, help="Name of summoner")
         args = parser.parse_args()
         name = args.summoner
         name_is_valid = False
-        while name_is_valid == False:
+        while name_is_valid is False:
             try:
                 if re.match(r"^[\w ]+$", name) is not None:
                     if re.match(r".*_.*", name) is None:
                         return name
-                    else:
-                        raise ValueError
-                else:
                     raise ValueError
+                raise ValueError
             except ValueError:
                 name = input("Name invalid. Please try again: ")
 
     def get_summoner_by_name(self, summ_name, api_key):
         """
-        Gets summoner's identifiers by name.
+        Get summoner's identifiers by name.
 
         Parameters:
             summ_name : string
         Returns: tuple
-            format : (name : str, summoner_id : str, account_id : str, icon : str)
+            format : (name : str, summoner_id :
+            str, account_id : str, icon : str)
 
         """
-        query = {"api_key": self.API_TEST_KEY}
+        query = {"api_key": api_key}
         summoner = self.handle_request(f"summoner/v4/summoners/by-name/\
 {summ_name}", **query)
         name = summoner['name']
         summoner_id = summoner['id']
         account_id = summoner['accountId']
-        current_ver = self.STATIC_DATA[0]
+        current_ver = self.static_data[0]
         icon = f"http://ddragon.leagueoflegends.com/cdn/{current_ver}/img/\
 profileicon/{summoner['profileIconId']}.png"
         return (name, summoner_id, account_id, icon)
@@ -208,16 +211,18 @@ profileicon/{summoner['profileIconId']}.png"
                     raise TypeError
         return temp_file_name
 
-    def get_match_data(self, game, summoner):
+    @staticmethod
+    def get_match_data(game, summoner):
         """
         Get data from match.
+
         Gets win/loss value, summoner's champion, teammates' champions, and
         opponents' champions.
 
         Parameters:
             game : dict
             summoner : str
-        
+
         Returns : tuple
 
         """
@@ -230,14 +235,14 @@ profileicon/{summoner['profileIconId']}.png"
                 player_win = player_stats["stats"]["win"]
 
         if player_team == 100:
-            teammates = [summ for summ in game["participants"][0:5] 
-            if summ["participantId"] != player_id]
+            teammates = [summ for summ in game["participants"][0:5]
+                         if summ["participantId"] != player_id]
             opponents = [summ for summ in game["participants"][5:10]]
         else:
-            teammates = [summ for summ in game["participants"][5:10] 
-            if summ["participantId"] != player_id]
+            teammates = [summ for summ in game["participants"][5:10]
+                         if summ["participantId"] != player_id]
             opponents = [summ for summ in game["participants"][0:5]]
-        
+
         team = [summoner["championId"] for summoner in teammates]
         enemy = [summoner["championId"] for summoner in opponents]
 
@@ -256,34 +261,38 @@ profileicon/{summoner['profileIconId']}.png"
         """
         with open(temp_file, 'r', encoding="utf-8") as data:
             matchlist = json.load(data)
-            n = summoner
-            ret_list = [self.get_match_data(i, n) for i in matchlist["matches"]]
+            num = summoner
+            ret_list = [self.get_match_data(i, num)
+                        for i in matchlist["matches"]]
         return ret_list
 
     def get_champion_mastery(self, summoner_id, api_key):
-            """
-            Get five highest mastery champions for a summoner.
-
-            Parameters:
-                summoner_id : str
-                api_key : str
-            
-            Returns : list
-                [(id, mastery points)]
-
-            """
-            ext = f"champion-mastery/v4/champion-masteries/by-summoner/\
-{summoner_id}"
-            mastery_req = self.handle_request(ext, api_key=api_key)
-            mastery = mastery_req
-            m_list = [(x["championId"], x["championPoints"]) for x in mastery]
-            m_list_2 = sorted(m_list, key=lambda x: x[1], reverse=True)[0:5]
-            return m_list_2
-
-    def get_static_data(self):
         """
-        Get current version data. Retrieves latest version data and matching
-        champion data from static data.
+        Get five highest mastery champions for a summoner.
+
+        Parameters:
+            summoner_id : str
+            api_key : str
+
+        Returns : list
+            [(id, mastery points)]
+
+        """
+        ext = f"champion-mastery/v4/champion-masteries/by-summoner/\
+{summoner_id}"
+        mastery_req = self.handle_request(ext, api_key=api_key)
+        mastery = mastery_req
+        m_list = [(x["championId"], x["championPoints"]) for x in mastery]
+        m_list_2 = sorted(m_list, key=lambda x: x[1], reverse=True)[0:5]
+        return m_list_2
+
+    @staticmethod
+    def get_static_data():
+        """
+        Get current version data.
+
+        Retrieves latest version data and matching champion data from static
+        data.
 
         Returns : tuple
             Format : (string, dict)
@@ -297,8 +306,8 @@ profileicon/{summoner['profileIconId']}.png"
         champion_ids = champ_request.json()
         return current_ver, champion_ids
 
-
-    def get_champion_ids(self, static_champions):
+    @staticmethod
+    def get_champion_ids(static_champions):
         """
         Get readable champion IDs.
 
@@ -312,29 +321,34 @@ profileicon/{summoner['profileIconId']}.png"
             clist[key] = name
         return clist
 
-    def stat_entry(self, stats, update=None):
+    @staticmethod
+    def stat_entry(stats, update=None):
         """
+        Update stat entry.
+
         Parameters:
             stats : tuple
                 (self, ally, enemy, win_self, win_with, win_against)
             update : dict
+
         Returns : dict
+
         """
         if update is None:
             stat_entry = {"id" : stats[0],
-                        "played_as" : stats[1],
-                        "same_team" : stats[2],
-                        "other_team" : stats[3],
-                        "wins_as" : stats[4],
-                        "wins_with" : stats[5],
-                        "wins_against" : stats[6]}
+                          "played_as" : stats[1],
+                          "same_team" : stats[2],
+                          "other_team" : stats[3],
+                          "wins_as" : stats[4],
+                          "wins_with" : stats[5],
+                          "wins_against" : stats[6]}
             return stat_entry
-        else:
-            ret_update = update
-            for n, key in enumerate(ret_update):
-                if n > 0:
-                    ret_update[key] += stats[n]
-            return ret_update
+
+        ret_update = update
+        for num, key in enumerate(ret_update):
+            if num > 0:
+                ret_update[key] += stats[num]
+        return ret_update
 
     def create_stat_dict_2(self, list_of_tuples):
         """
@@ -342,6 +356,7 @@ profileicon/{summoner['profileIconId']}.png"
 
         Parameters:
             list_of_tuples : tuple
+
         Returns : dict
 
         """
@@ -350,54 +365,49 @@ profileicon/{summoner['profileIconId']}.png"
             if match[0] is True:
                 if match[1] not in stat_dict:
                     stat_dict[match[1]] = self.stat_entry((match[1],
-                    1,0,0,1,0,0))
-                else:
-                    stat_dict[match[1]] = self.stat_entry((match[1],
-                     1,0,0,1,0,0),
-                     stat_dict[match[1]])
+                                                           1, 0, 0, 1, 0, 0))
+                stat_dict[match[1]] = self.stat_entry((match[1],
+                                                       1, 0, 0, 1, 0, 0),
+                                                      stat_dict[match[1]])
                 for summ_2 in match[2]:
                     if summ_2 not in stat_dict:
                         stat_dict[summ_2] = self.stat_entry((summ_2,
-                        0,1,0,0,1,0))
-                    else:
-                        stat_dict[summ_2] = self.stat_entry((summ_2,
-                        0,1,0,0,1,0),
-                        stat_dict[summ_2])
+                                                             0, 1, 0, 0, 1, 0))
+                    stat_dict[summ_2] = self.stat_entry((summ_2,
+                                                         0, 1, 0, 0, 1, 0),
+                                                        stat_dict[summ_2])
                 for summ_3 in match[3]:
                     if summ_3 not in stat_dict:
                         stat_dict[summ_3] = self.stat_entry((summ_3,
-                        0,0,1,0,0,1))
-                    else:
-                        stat_dict[summ_3] = self.stat_entry((summ_3,
-                        0,0,1,0,0,1),
-                        stat_dict[summ_3])
+                                                             0, 0, 1, 0, 0, 1))
+                    stat_dict[summ_3] = self.stat_entry((summ_3,
+                                                         0, 0, 1, 0, 0, 1),
+                                                        stat_dict[summ_3])
             else:
                 if match[1] not in stat_dict:
                     stat_dict[match[1]] = self.stat_entry(([match[1]],
-                    1,0,0,0,0,0))
-                else:
-                    stat_dict[match[1]] = self.stat_entry(([match[1]],
-                    1,0,0,0,0,0),
-                    stat_dict[match[1]])
+                                                           1, 0, 0, 0, 0, 0))
+                stat_dict[match[1]] = self.stat_entry(([match[1]],
+                                                       1, 0, 0, 0, 0, 0),
+                                                      stat_dict[match[1]])
                 for summ_2 in match[2]:
                     if summ_2 not in stat_dict:
                         stat_dict[summ_2] = self.stat_entry((summ_2,
-                        0,1,0,0,0,0))
-                    else:
-                        stat_dict[summ_2] = self.stat_entry((summ_2,
-                        0,1,0,0,0,0),
-                        stat_dict[summ_2])
+                                                             0, 1, 0, 0, 0, 0))
+                    stat_dict[summ_2] = self.stat_entry((summ_2,
+                                                         0, 1, 0, 0, 0, 0),
+                                                        stat_dict[summ_2])
                 for summ_3 in match[3]:
                     if summ_3 not in stat_dict:
                         stat_dict[summ_3] = self.stat_entry((summ_3,
-                        0,0,1,0,0,0))
-                    else:
-                        stat_dict[summ_3] = self.stat_entry((summ_3,
-                        0,0,1,0,0,0),
-                        stat_dict[summ_3])
+                                                             0, 0, 1, 0, 0, 0))
+                    stat_dict[summ_3] = self.stat_entry((summ_3,
+                                                         0, 0, 1, 0, 0, 0),
+                                                        stat_dict[summ_3])
         return stat_dict
 
-    def flatten_stat_dict(self, stat_dict):
+    @staticmethod
+    def flatten_stat_dict(stat_dict):
         """
         Flatten dictionary of champion stats into a 2D array.
 
@@ -410,10 +420,11 @@ profileicon/{summoner['profileIconId']}.png"
         champ_array = [list(stat_dict[i].values()) for i in keys]
         return champ_array
 
-    def comp_champ_stats(self, champion_array, sort_by, compare = None):
+    @staticmethod
+    def comp_champ_stats(champion_array, sort_by, compare=None):
         """
-        Operate on 2D array of champion statistics, returning data based on key.
-        (self, ally, enemy, win_self, win_with, win_against)
+        Operate on 2D array of champion statistics, returning based on key.
+
         Parameters:
             champion_array : list
                 2D array containing statistics.
@@ -431,57 +442,61 @@ profileicon/{summoner['profileIconId']}.png"
                     if c_tuple[0] == d_tuple[0]:
                         cmp_array.append(d_tuple)
             return sorted(cmp_array, key=lambda x: x[6], reverse=True)
-        else:
-            count = 5
-            if sort_by == "wins-as":
-                team, rev_value, count = (1, True, 1)
-            if sort_by == "wins-with":
-                team, rev_value = (2, True)
-            if sort_by == "wins-against":
-                team, rev_value = (3, True)
-            if sort_by == "losses-as":
-                team, rev_value = (1, False)
-            if sort_by == "losses-with":
-                team, rev_value = (2, False)
-            if sort_by == "losses-against":
-                team, rev_value = (3, False)
-            func = lambda x: x[team]
-            ret_list = [x for x in champion_array if x[team] >= count]
-            ret_list_2 = sorted(ret_list, key=func, reverse=rev_value)[0:5]
-            
-            return ret_list_2
+        count = 5
+        if sort_by == "wins-as":
+            team, rev_value, count = (1, True, 1)
+        if sort_by == "wins-with":
+            team, rev_value = (2, True)
+        if sort_by == "wins-against":
+            team, rev_value = (3, True)
+        if sort_by == "losses-as":
+            team, rev_value = (1, False)
+        if sort_by == "losses-with":
+            team, rev_value = (2, False)
+        if sort_by == "losses-against":
+            team, rev_value = (3, False)
+
+        ret_list = [x for x in champion_array if x[team] >= count]
+        ret_list_2 = sorted(ret_list,
+                            key=lambda x: x[team],
+                            reverse=rev_value)[0:5]
+
+        return ret_list_2
 
     def parse_results(self):
-        """
-        Interpret results to be readable.
-        """
-        champ_ids = self.STATIC_DATA[1]
+        """Interpret results to be readable."""
+        champ_ids = self.static_data[1]
         id_dict = self.get_champion_ids(champ_ids)
         print("Most frequently played as:")
-        a = [(id_dict[str(x[0])], f"{x[1]} games") for x in self.high_wins_as]
-        print(a)
+        a_1 = [(id_dict[str(x[0])], f"{x[1]} games")
+               for x in self.high_wins_as]
+        print(a_1)
 
         print("Most frequently played with:")
-        b = [(id_dict[str(x[0])], f"{x[2]} games") for x in self.high_wins_with]
-        print(b)
+        b_2 = [(id_dict[str(x[0])], f"{x[2]} games")
+               for x in self.high_wins_with]
+        print(b_2)
 
         print("Most frequently played against:")
-        c = [(id_dict[str(x[0])], f"{x[3]} games") for x in self.high_wins_against]
-        print(c)
+        c_3 = [(id_dict[str(x[0])], f"{x[3]} games")
+               for x in self.high_wins_against]
+        print(c_3)
 
         print("Least frequently played as:")
-        d = [(id_dict[str(x[0])], f"{x[1]} games") for x in self.low_wins_as]
-        print(d)
-        
+        d_4 = [(id_dict[str(x[0])], f"{x[1]} games") for x in self.low_wins_as]
+        print(d_4)
+
         print("Least frequently played with:")
-        e = [(id_dict[str(x[0])], f"{x[2]} games") for x in self.low_wins_with]
-        print(e)
+        e_5 = [(id_dict[str(x[0])], f"{x[2]} games")
+               for x in self.low_wins_with]
+        print(e_5)
 
         print("Least frequently played against:")
-        f = [(id_dict[str(x[0])], f"{x[3]} games") for x in self.low_wins_against]
-        print(f)
+        f_6 = [(id_dict[str(x[0])], f"{x[3]} games")
+               for x in self.low_wins_against]
+        print(f_6)
 
 
 if __name__ == "__main__":
-    test = Summoner()
-    print(test.process())
+    INSTANCE = Summoner()
+    print(INSTANCE.process())
