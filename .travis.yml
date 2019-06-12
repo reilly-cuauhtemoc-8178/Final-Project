@@ -1,7 +1,7 @@
 ---
 dist: xenial
 install:
-  - "pip install pytest pylint pycodestyle pydocstyle requests argparse re time json"
+  - "pip install pytest pylint pycodestyle pydocstyle requests time"
 language: python
 python:
   - "3.7"
