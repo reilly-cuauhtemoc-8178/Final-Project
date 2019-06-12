@@ -79,7 +79,7 @@ class Summoner:
 
         """
         base = 'https://na1.api.riotgames.com/lol/'
-        querystring = {key:value for key, value in queries.items()}
+        querystring = {key: value for key, value in queries.items()}
         url = f"{base}{ext}"
         try:
             request = requests.get(url, params=querystring)
@@ -108,7 +108,7 @@ class Summoner:
 
         """
         ext = "status/v3/shard-data"
-        query = {"api_key":self.API_TEST_KEY}
+        query = {"api_key": self.API_TEST_KEY}
         test_request = self.handle_request(ext, **query)
         if test_request is None:
             print("There was a connection error.")
@@ -174,7 +174,7 @@ profileicon/{summoner['profileIconId']}.png"
 
         """
         account_id = self.get_summoner_by_name(summ_name, api_key)[2]
-        query = {"season":13, "queue":400, "api_key":api_key}
+        query = {"season": 13, "queue": 400, "api_key": api_key}
         match_list = self.handle_request(f"match/v4/matchlists/by-account/\
 {account_id}", **query)
         return match_list
@@ -196,7 +196,7 @@ profileicon/{summoner['profileIconId']}.png"
             write_file.write(header)
             for match in matchlist["matches"][0:100]:
                 match_id = match["gameId"]
-                query = {"api_key":api_key}
+                query = {"api_key": api_key}
                 match_data = self.handle_request(f"match/v4/matches/\
 {match_id}", **query)
                 write_file.write(json.dumps(match_data))
@@ -337,13 +337,13 @@ profileicon/{summoner['profileIconId']}.png"
 
         """
         if update is None:
-            stat_entry = {"id" : stats[0],
-                          "played_as" : stats[1],
-                          "same_team" : stats[2],
-                          "other_team" : stats[3],
-                          "wins_as" : stats[4],
-                          "wins_with" : stats[5],
-                          "wins_against" : stats[6]}
+            stat_entry = {"id": stats[0],
+                          "played_as": stats[1],
+                          "same_team": stats[2],
+                          "other_team": stats[3],
+                          "wins_as": stats[4],
+                          "wins_with": stats[5],
+                          "wins_against": stats[6]}
             return stat_entry
 
         ret_update = update
