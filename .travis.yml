@@ -1,0 +1,17 @@
+---
+dist: xenial
+install:
+  - "pip install pytest pylint pycodestyle pydocstyle requests argparse re time json"
+language: python
+python:
+  - "3.7"
+script:
+  - pylint summoner_container.py
+  - pycodestyle summoner_container.py
+  - pydocstyle summoner_container.py
+notifications:
+  email:
+    recipients:
+      - user@example.com
+    on_success: always
+    on_failure: always
