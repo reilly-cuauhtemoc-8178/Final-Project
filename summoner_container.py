@@ -12,7 +12,7 @@ import requests
 
 
 class Summoner:
-    """Contains data for one summoner and methods to calculate data."""
+    """Contains data for one summoner and methods to calculate return data."""
 
     bad_connect = False
     API_TEST_KEY = "RGAPI-fa695a0d-056b-48fd-8546-e05e28120a29"
