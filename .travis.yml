@@ -9,6 +9,7 @@ script:
   - pylint summoner_container.py
   - pycodestyle summoner_container.py
   - pydocstyle summoner_container.py
+  - pytest
 notifications:
   email:
     recipients:
