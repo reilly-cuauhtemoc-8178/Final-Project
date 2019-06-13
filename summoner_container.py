@@ -19,13 +19,7 @@ class Summoner:
     summoner_in = ""
     static_data = ()
 
-    high_wins_with = []
-    high_wins_as = []
-    high_wins_against = []
-    low_wins_with = []
-    low_wins_as = []
-    low_wins_against = []
-    highest_mastery = []
+    big_data = list()
 
     def __init__(self):
         """Initialize Summoner object."""
@@ -52,16 +46,17 @@ class Summoner:
                      "losses-as", "losses-with", "losses-against"]
         comp_results = [self.comp_champ_stats(data_array, d)
                         for d in comp_list]
-        self.high_wins_as = comp_results[0]
-        self.high_wins_with = comp_results[1]
-        self.high_wins_against = comp_results[2]
-        self.low_wins_as = comp_results[3]
-        self.low_wins_with = comp_results[4]
-        self.low_wins_against = comp_results[5]
-        self.highest_mastery = self.comp_champ_stats(data_array,
-                                                     'wins-against',
-                                                     mastery)
-        self.parse_results()
+
+        self.big_data.append(comp_results[0])
+        self.big_data.append(comp_results[1])
+        self.big_data.append(comp_results[2])
+        self.big_data.append(comp_results[3])
+        self.big_data.append(comp_results[4])
+        self.big_data.append(comp_results[5])
+        self.big_data.append(self.comp_champ_stats(data_array,
+                                                   'wins-against',
+                                                   mastery))
+        self.parse_results(self.get_champion_ids(self.static_data[1]))
         return "all clear"
 
     def handle_request(self, ext, **queries):
@@ -86,19 +81,16 @@ class Summoner:
             header = request.headers
             if request.raise_for_status() is None:
                 return request.json()
+            raise requests.exceptions.HTTPError
         except requests.exceptions.HTTPError as http_except:
             if request.status_code == 429:
                 sleep_time = int(header["Retry-After"])+2
                 print(f"Rate limit reached. Resting for {sleep_time} seconds.")
                 time.sleep(sleep_time)
-                return self.handle_request(ext, **queries)
+                retry = self.handle_request(ext, **queries)
+                return retry
             print(f"HTTP Error: {http_except}")
             raise requests.exceptions.HTTPError
-
-        except ConnectionError as con_except:
-            print(f"Connection Error: {con_except}")
-        except requests.exceptions.RequestException as err:
-            print(f"Error: {err}")
 
     def check_connection(self):
         """
@@ -352,6 +344,80 @@ profileicon/{summoner['profileIconId']}.png"
                 ret_update[key] += stats[num]
         return ret_update
 
+    def debrancher_true(self, update_dict, match_tuple):
+        """
+        Substitute branch.
+
+        Parameters:
+            update_dict : dict
+            match_tuple : tuple
+
+        Returns: dict
+
+        """
+        if match_tuple[1] not in update_dict:
+            update_dict[match_tuple[1]] = self.stat_entry((match_tuple[1],
+                                                           1, 0, 0, 1, 0, 0))
+        else:
+            update_dict[match_tuple[1]] = self.stat_entry((match_tuple[1],
+                                                           1, 0, 0, 1, 0, 0),
+                                                          update_dict[
+                                                              match_tuple[1]])
+        for summ_2 in match_tuple[2]:
+            if summ_2 not in update_dict:
+                update_dict[summ_2] = self.stat_entry((summ_2,
+                                                       0, 1, 0, 0, 1, 0))
+            else:
+                update_dict[summ_2] = self.stat_entry((summ_2,
+                                                       0, 1, 0, 0, 1, 0),
+                                                      update_dict[summ_2])
+        for summ_3 in match_tuple[3]:
+            if summ_3 not in update_dict:
+                update_dict[summ_3] = self.stat_entry((summ_3,
+                                                       0, 0, 1, 0, 0, 1))
+            else:
+                update_dict[summ_3] = self.stat_entry((summ_3,
+                                                       0, 0, 1, 0, 0, 1),
+                                                      update_dict[summ_3])
+        return update_dict
+
+    def debrancher_false(self, update_dict, match_tuple):
+        """
+        Substitute branch.
+
+        Parameters:
+            update_dict : dict
+            match_tuple : tuple
+
+        Returns: dict
+
+        """
+        if match_tuple[1] not in update_dict:
+            update_dict[match_tuple[1]] = self.stat_entry(([match_tuple[1]],
+                                                           1, 0, 0, 0, 0, 0))
+        else:
+            update_dict[match_tuple[1]] = self.stat_entry(([match_tuple[1]],
+                                                           1, 0, 0, 0, 0, 0),
+                                                          update_dict[
+                                                              match_tuple[1]])
+        for summ_2 in match_tuple[2]:
+            if summ_2 not in update_dict:
+                update_dict[summ_2] = self.stat_entry((summ_2,
+                                                       0, 1, 0, 0, 0, 0))
+            else:
+                update_dict[summ_2] = self.stat_entry((summ_2,
+                                                       0, 1, 0, 0, 0, 0),
+                                                      update_dict[summ_2])
+        for summ_3 in match_tuple[3]:
+            if summ_3 not in update_dict:
+                update_dict[summ_3] = self.stat_entry((summ_3,
+                                                       0, 0, 1, 0, 0, 0))
+            else:
+                update_dict[summ_3] = self.stat_entry((summ_3,
+                                                       0, 0, 1, 0, 0, 0),
+                                                      update_dict[summ_3])
+        return update_dict
+
     def create_stat_dict_2(self, list_of_tuples):
         """
         Create dict containing data for each champion.
@@ -365,47 +431,9 @@ profileicon/{summoner['profileIconId']}.png"
         stat_dict = dict()
         for match in list_of_tuples:
             if match[0] is True:
-                if match[1] not in stat_dict:
-                    stat_dict[match[1]] = self.stat_entry((match[1],
-                                                           1, 0, 0, 1, 0, 0))
-                stat_dict[match[1]] = self.stat_entry((match[1],
-                                                       1, 0, 0, 1, 0, 0),
-                                                      stat_dict[match[1]])
-                for summ_2 in match[2]:
-                    if summ_2 not in stat_dict:
-                        stat_dict[summ_2] = self.stat_entry((summ_2,
-                                                             0, 1, 0, 0, 1, 0))
-                    stat_dict[summ_2] = self.stat_entry((summ_2,
-                                                         0, 1, 0, 0, 1, 0),
-                                                        stat_dict[summ_2])
-                for summ_3 in match[3]:
-                    if summ_3 not in stat_dict:
-                        stat_dict[summ_3] = self.stat_entry((summ_3,
-                                                             0, 0, 1, 0, 0, 1))
-                    stat_dict[summ_3] = self.stat_entry((summ_3,
-                                                         0, 0, 1, 0, 0, 1),
-                                                        stat_dict[summ_3])
+                stat_dict = self.debrancher_true(stat_dict, match)
             else:
-                if match[1] not in stat_dict:
-                    stat_dict[match[1]] = self.stat_entry(([match[1]],
-                                                           1, 0, 0, 0, 0, 0))
-                stat_dict[match[1]] = self.stat_entry(([match[1]],
-                                                       1, 0, 0, 0, 0, 0),
-                                                      stat_dict[match[1]])
-                for summ_2 in match[2]:
-                    if summ_2 not in stat_dict:
-                        stat_dict[summ_2] = self.stat_entry((summ_2,
-                                                             0, 1, 0, 0, 0, 0))
-                    stat_dict[summ_2] = self.stat_entry((summ_2,
-                                                         0, 1, 0, 0, 0, 0),
-                                                        stat_dict[summ_2])
-                for summ_3 in match[3]:
-                    if summ_3 not in stat_dict:
-                        stat_dict[summ_3] = self.stat_entry((summ_3,
-                                                             0, 0, 1, 0, 0, 0))
-                    stat_dict[summ_3] = self.stat_entry((summ_3,
-                                                         0, 0, 1, 0, 0, 0),
-                                                        stat_dict[summ_3])
+                stat_dict = self.debrancher_false(stat_dict, match)
         return stat_dict
 
     @staticmethod
@@ -465,37 +493,42 @@ profileicon/{summoner['profileIconId']}.png"
 
         return ret_list_2
 
-    def parse_results(self):
+    def parse_results(self, id_dict):
         """Interpret results to be readable."""
-        champ_ids = self.static_data[1]
-        id_dict = self.get_champion_ids(champ_ids)
+        high_wins_as = self.big_data[0]
+        high_wins_with = self.big_data[1]
+        high_wins_against = self.big_data[2]
+        low_wins_as = self.big_data[3]
+        low_wins_with = self.big_data[4]
+        low_wins_against = self.big_data[5]
+
         print("Most frequently played as:")
         a_1 = [(id_dict[str(x[0])], f"{x[1]} games")
-               for x in self.high_wins_as]
+               for x in high_wins_as]
         print(a_1)
 
         print("Most frequently played with:")
         b_2 = [(id_dict[str(x[0])], f"{x[2]} games")
-               for x in self.high_wins_with]
+               for x in high_wins_with]
         print(b_2)
 
         print("Most frequently played against:")
         c_3 = [(id_dict[str(x[0])], f"{x[3]} games")
-               for x in self.high_wins_against]
+               for x in high_wins_against]
         print(c_3)
 
         print("Least frequently played as:")
-        d_4 = [(id_dict[str(x[0])], f"{x[4]} games") for x in self.low_wins_as]
+        d_4 = [(id_dict[str(x[0])], f"{x[4]} games") for x in low_wins_as]
         print(d_4)
 
         print("Least frequently played with:")
         e_5 = [(id_dict[str(x[0])], f"{x[5]} games")
-               for x in self.low_wins_with]
+               for x in low_wins_with]
         print(e_5)
 
         print("Least frequently played against:")
         f_6 = [(id_dict[str(x[0])], f"{x[6]} games")
-               for x in self.low_wins_against]
+               for x in low_wins_against]
         print(f_6)
 
 
